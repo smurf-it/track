@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+    const stripe = Stripe('pk_test_51QCjp0Ck7aK70PhI2n8lOknmtDeohqaKVRVLbD0KcqsF3Q28bznWhJKFAw3QZOjjwFoPT6WO2FqnXp5eKOccikQs00L1ReMZUU');
+    
+       // Initialize Firebase
+       const firebaseConfig = {
+            apiKey: "AIzaSyDFHafa4F9JOk99TyS3Ob78HEmW5wXOOb0",
+            authDomain: "tiptracker-e2e9a.firebaseapp.com",
+            projectId: "tiptracker-e2e9a",
+            storageBucket: "tiptracker-e2e9a.appspot.com",
+            messagingSenderId: "326366703466",
+            appId: "1:326366703466:web:b974ba09c22f9e71e3ff13",
+            measurementId: "G-4NWQRC0PBR"
+        };
+
+    // document.getElementById('payment-link').style.display = "block";
+     // Initialize Firebase
+     const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        async function checkSubscriptionStatus(userId) {
+            try {
+                const userDoc = await getDoc(doc(db, 'userAccess', userId));
+
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+
+                    const subscriptionDateField = data.subscriptionDate;
+                    if (!subscriptionDateField) {
+                        console.error('Subscription date is missing');
+                        // Handle the absence of the subscription date appropriately
+                        return;
+                    }
+                    const subscriptionDate = data.subscriptionDate.toDate();
+                    const currentDate = new Date();
+                    const subscriptionEndDate = new Date(subscriptionDate);
+                    subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+
+                    if (currentDate < subscriptionEndDate) { 
+                        console.log("Active subscription, redirecting to home.");
+                        window.location.href = 'home.html';
+                    } else {
+                        console.log("Subscription expired, showing payment link.");
+                        document.getElementById('payment-message').innerText = "Your subscription has expired, please use the button below to renew it...";
+                        document.getElementById('payment-link').style.display = 'block';
+                    }
+                } else {
+                    console.log("No user found in Firestore, showing payment link.");
+                    document.getElementById('payment-message').innerText = "No subscription was found, please use the button below to subscribe...";
+                    document.getElementById('payment-link').style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error checking subscription status:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const userId = user.uid; // Get user ID
+                    checkSubscriptionStatus(userId);
+                } else {
+                   // window.location.href = './auth/auth.html'; // Redirect to auth if not logged in
+                }
+            });
+        });
+
+        document.getElementById('checkout-button').addEventListener('click', async () => {
+            const userId = auth.currentUser.uid; // Get the current user ID
+            const response = await fetch('https://payment-check.epoueisai10g.workers.dev/create-checkout-session', {//'https://a017005b-43b1-4aec-b292-745c7698af7f-00-2fw1l1teuox21.janeway.replit.dev/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }) // Send the user ID to the server
+            });
+
+            if (!response.ok) {
+                console.error("Failed to create checkout session:", await response.text());
+                return;
+            }       
+
+            const sessionId = await response.json();
+            const result = await stripe.redirectToCheckout({ sessionId: sessionId.id });
+
+            if (result.error) {
+                console.error(result.error.message);
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+        }
+
+        .main_card {
+            background: linear-gradient(#3a3a3a 0 0) padding-box,
+            linear-gradient(to right, #d81eed, #9b59b6, #7435fb) border-box;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            color: #313149;
+            border: 5px solid transparent;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 70%;
+            height: 40%;
+            margin: 5vh auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            font-size: 1rem;
+            background-color: #9b59b6;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0.75rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        p {
+            text-align: center;
+            color: #ffffff;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main_card">
+        <h1>Payment Page</h1>
+        <p id="payment-message">Checking you subscription status, please wait one moment...</p>
+        <div id="payment-link" style="display:none;">
+            <button id="checkout-button">Pay Now</button>
+        </div>
+    </div>
+</body>
+</html>
