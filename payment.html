@@ -31,8 +31,10 @@
         const db = getFirestore(app);
 
         async function checkSubscriptionStatus(userId) {
+            document.getElementById('loading').style.display = 'block';
             try {
                 const userDoc = await getDoc(doc(db, 'userAccess', userId));
+                document.getElementById('loading').style.display = 'none';
 
                 if (userDoc.exists()) {
                     const data = userDoc.data();
@@ -50,7 +52,8 @@
 
                     if (currentDate < subscriptionEndDate) { 
                         console.log("Active subscription, redirecting to home.");
-                        window.location.href = 'home.html';
+                        document.getElementById('payment-message').innerText = "Your subscription is valid, you are redirected home...";
+                        window.location.href = '/home.html';
                     } else {
                         console.log("Subscription expired, showing payment link.");
                         document.getElementById('payment-message').innerText = "Your subscription has expired, please use the button below to renew it...";
@@ -165,6 +168,22 @@
             color: #ffffff;
             margin-top: 10px;
         }
+
+        .loading-spinner {
+            border: 8px solid #3f3f3f;
+            border-top: 8px solid #9b59b6; 
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto; 
+            display: none; 
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -175,5 +194,6 @@
             <button id="checkout-button">Pay Now</button>
         </div>
     </div>
+    <div id="loading" class="loading-spinner"></div>
 </body>
 </html>
