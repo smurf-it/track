@@ -45,7 +45,7 @@
                     if(userHasAccess) {
                         console.log("Active subscription, redirecting to home.");
                         document.getElementById('payment-message').innerText = "Your subscription is valid, you are redirected home...";
-                        //window.location.href = 'home.html';
+                        window.location.href = 'home.html';
                     } else {
                         console.log("Subscription expired, showing payment link.");
                         document.getElementById('payment-message').innerText = "Your subscription has expired, please use the button below to renew it...";
